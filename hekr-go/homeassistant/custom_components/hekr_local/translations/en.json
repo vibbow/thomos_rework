@@ -1,0 +1,93 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to hekr-local",
+        "description": "Address of the server running hekr-local. The token is the server's HEKR_TOKEN; leave empty if none is set.",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "token": "Access token"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-enter access token",
+        "description": "The server rejected the current access token.",
+        "data": {
+          "token": "Access token"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to the server",
+      "invalid_auth": "Invalid access token"
+    },
+    "abort": {
+      "already_configured": "This server is already configured",
+      "reauth_successful": "Re-authentication successful"
+    }
+  },
+  "entity": {
+    "fan": {
+      "ventilation": {
+        "state_attributes": {
+          "preset_mode": {
+            "name": "Mode",
+            "state": {
+              "manual": "Manual",
+              "auto": "Auto",
+              "boost": "Boost"
+            }
+          }
+        }
+      }
+    },
+    "number": {
+      "supply_flow": {
+        "name": "Supply air flow"
+      },
+      "exhaust_flow": {
+        "name": "Exhaust air flow"
+      }
+    },
+    "sensor": {
+      "filter_primary": {
+        "name": "Primary filter life"
+      },
+      "filter_high": {
+        "name": "HEPA filter life"
+      },
+      "filter_catalyst": {
+        "name": "Catalyst filter life"
+      },
+      "filter_electrostatic": {
+        "name": "Electrostatic filter life"
+      }
+    },
+    "binary_sensor": {
+      "alarm_primary": {
+        "name": "Primary filter needs replacement"
+      },
+      "alarm_high": {
+        "name": "HEPA filter needs replacement"
+      },
+      "alarm_catalyst": {
+        "name": "Catalyst filter needs replacement"
+      },
+      "alarm_electrostatic": {
+        "name": "Electrostatic filter needs replacement"
+      },
+      "online": {
+        "name": "Online"
+      }
+    }
+  },
+  "exceptions": {
+    "device_off": {
+      "message": "The device is off; turn it on first"
+    },
+    "auto_mode": {
+      "message": "Airflow is controlled by the device in auto mode; switch to manual or boost first"
+    }
+  }
+}

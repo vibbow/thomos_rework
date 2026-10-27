@@ -1,0 +1,13 @@
+# 凭据与设备密钥
+login
+hekr-go/devices.json
+
+# 抓包与第三方 APK / 网页
+*.pcap
+*.apk
+html/
+
+# 构建产物与缓存
+hekr-go/dist/
+__pycache__/
+*.pyc

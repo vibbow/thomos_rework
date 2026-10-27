@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#16a06a">
+<title>新风控制</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f3f5f7; --card: #ffffff; --fg: #1c2631; --muted: #758292; --line: #e2e7ec; --track: #e6eaee;
+    --ok: #16a06a; --warn: #e08a00; --bad: #d9453f; --on-accent: #fff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f141a; --card: #19212a; --fg: #e5eaef; --muted: #8794a3; --line: #28323d; --track: #2a343f; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); -webkit-tap-highlight-color: transparent;
+         font: 15px/1.45 system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+           padding: 14px 20px; position: sticky; top: 0; background: var(--bg); z-index: 2; border-bottom: 1px solid var(--line); }
+  header h1 { margin: 0; font-size: 18px; font-weight: 650; }
+  #sync { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  #sync i { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+  #sync.bad i { background: var(--bad); }
+  #sync.bad { color: var(--bad); }
+
+  main { display: grid; gap: 16px; padding: 16px 20px 40px; max-width: 1300px; margin: 0 auto;
+         grid-template-columns: repeat(auto-fill, minmax(min(310px, 100%), 1fr)); }
+  .empty { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 60px 0; }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px 16px 12px; transition: opacity .2s; }
+  .card.offline { opacity: .55; }
+  .head { display: flex; align-items: center; gap: 12px; }
+  .titles { flex: 1; min-width: 0; }
+  .name { font-size: 17px; font-weight: 650; cursor: text; border: 0; background: none; color: inherit; padding: 0; text-align: left;
+          max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; font-family: inherit; }
+  .name:hover { text-decoration: underline dotted; text-underline-offset: 3px; }
+  .state { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .card.running .dot { background: var(--ok); box-shadow: 0 0 0 3px #16a06a33; }
+  .power { width: 48px; height: 48px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer;
+           background: var(--track); color: var(--muted); transition: background .2s, color .2s, transform .1s; }
+  .power svg { width: 24px; height: 24px; }
+  .card.running .power { background: var(--ok); color: var(--on-accent); }
+  .power:active:not(:disabled) { transform: scale(.94); }
+
+  .alert { margin: 12px 0 0; padding: 8px 10px; border-radius: 10px; font-size: 13px; background: #d9453f1f; color: var(--bad); }
+  .alert[hidden] { display: none; }
+
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 14px 0 4px; }
+  .metric { text-align: center; padding: 8px 2px; border-radius: 12px; background: var(--bg); }
+  .metric b { display: block; font-size: 19px; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .metric span { font-size: 11px; color: var(--muted); }
+  .metric small { font-size: 11px; font-weight: 600; }
+
+  .seg { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--track); border-radius: 10px; padding: 3px; gap: 3px; margin: 14px 0 6px; }
+  .seg button { border: 0; background: none; color: var(--fg); padding: 7px 0; border-radius: 8px; font: inherit; font-size: 14px; cursor: pointer; }
+  .seg button.active { background: var(--card); box-shadow: 0 1px 3px #0003; font-weight: 650; }
+  .seg button:disabled { cursor: not-allowed; opacity: .45; }
+
+  .slider { display: grid; grid-template-columns: 38px 1fr 76px; align-items: center; gap: 10px; margin: 10px 0; }
+  .slider label { font-size: 14px; }
+  .slider output { font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 28px; margin: 0; background: none; cursor: pointer; --p: 0%; }
+  input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: linear-gradient(to right, var(--ok) var(--p), var(--track) var(--p)); }
+  input[type=range]::-moz-range-track { height: 6px; border-radius: 3px; background: linear-gradient(to right, var(--ok) var(--p), var(--track) var(--p)); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; margin-top: -8px; border-radius: 50%; background: #fff; border: 2px solid var(--ok); box-shadow: 0 1px 3px #0004; }
+  input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 2px solid var(--ok); box-shadow: 0 1px 3px #0004; }
+  input[type=range]:disabled { opacity: .4; cursor: not-allowed; }
+  .hint { font-size: 12px; color: var(--muted); margin: -2px 0 0; min-height: 17px; }
+
+  .filters { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+  .f { display: grid; grid-template-columns: 52px 1fr 40px; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); margin: 5px 0; }
+  .bar { height: 6px; background: var(--track); border-radius: 3px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--ok); border-radius: 3px; transition: width .4s; }
+  .bar i.warn { background: var(--warn); } .bar i.bad { background: var(--bad); }
+  .f em { font-style: normal; text-align: right; font-variant-numeric: tabular-nums; }
+
+  .foot { margin-top: 10px; font-size: 11px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  .card.busy { pointer-events: none; }
+  .card.busy .power, .card.busy .seg { opacity: .6; }
+
+  #toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; z-index: 5;
+           background: #222c; color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 14px; max-width: 90vw;
+           backdrop-filter: blur(6px); transition: opacity .2s, transform .2s; }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  #toast.err { background: #b3302bee; }
+</style>
+</head>
+<body>
+<header>
+  <h1>新风控制</h1>
+  <div id="sync"><i></i><span>连接中…</span></div>
+</header>
+<main id="list"><div class="empty">加载中…</div></main>
+<div id="toast" role="status"></div>
+
+<template id="tpl">
+  <section class="card">
+    <div class="head">
+      <div class="titles">
+        <button class="name" title="点击改名"></button>
+        <div class="state"><i class="dot"></i><span></span></div>
+      </div>
+      <button class="power" aria-label="开关机"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v8"/><path d="M6.6 6.6a8 8 0 1 0 10.8 0"/></svg></button>
+    </div>
+    <div class="alert" hidden></div>
+    <div class="metrics">
+      <div class="metric"><b data-m="pm">--</b><span>PM2.5</span> <small data-m="pmq"></small></div>
+      <div class="metric"><b data-m="temp">--</b><span>温度</span></div>
+      <div class="metric"><b data-m="hum">--</b><span>湿度</span></div>
+      <div class="metric"><b data-m="co2">--</b><span>CO₂</span></div>
+    </div>
+    <div class="seg" role="group" aria-label="模式"></div>
+    <div class="slider"><label>新风</label><input type="range" min="0" max="70" step="1" data-k="airSpeed"><output></output></div>
+    <div class="slider"><label>排风</label><input type="range" min="0" max="70" step="1" data-k="exhaustSpeed"><output></output></div>
+    <div class="hint"></div>
+    <div class="filters"></div>
+    <div class="foot"></div>
+  </section>
+</template>
+
+<script>
+'use strict';
+const MODES = [[0, '手动'], [1, '自动'], [2, '强风']];
+const FILTERS = [['filter', '初效'], ['highFilter', '高效'], ['ltcFilter', '冷触媒'], ['eleFilter', '静电']];
+const ALARMS = {alarm: '初效滤网', highAlarm: '高效滤网', ltcAlarm: '冷触媒滤网', eleAlarm: '静电滤网'};
+const POLL_MS = 3000;
+
+const $ = (sel, root = document) => root.querySelector(sel);
+const params = new URLSearchParams(location.search);
+let token = params.get('token') || localStorage.getItem('token') || '';
+if (params.has('token')) { localStorage.setItem('token', token); history.replaceState(null, '', location.pathname); }
+
+const cards = new Map();           // devTid -> card 元素
+let askingToken = false;
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, {...opts, headers: {'Content-Type': 'application/json', ...(token ? {Authorization: 'Bearer ' + token} : {})}});
+  if (r.status === 401) { askToken(); throw new Error('需要访问令牌'); }
+  const text = await r.text();
+  let data; try { data = JSON.parse(text); } catch { data = text; }
+  if (!r.ok) throw new Error((data && data.error) || text || ('HTTP ' + r.status));
+  return data;
+}
+
+function askToken() {
+  if (askingToken) return;
+  askingToken = true;
+  const t = prompt('请输入访问令牌(服务器 /etc/hekr-local.env 里的 HEKR_TOKEN)');
+  askingToken = false;
+  if (t && t.trim()) { token = t.trim(); localStorage.setItem('token', token); load(); }
+}
+
+let toastTimer;
+function toast(text, isErr) {
+  const el = $('#toast');
+  el.textContent = text; el.className = 'show' + (isErr ? ' err' : '');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.className = '', isErr ? 4500 : 1800);
+}
+
+// 楼层排序:负一楼 < 一楼 < 二楼 …,其余按名称
+const NUM = {一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10};
+function floorKey(name) {
+  const m = /^(负)?([一二三四五六七八九十])/.exec(name);
+  return m ? [0, (m[1] ? -1 : 1) * NUM[m[2]], name] : [1, 0, name];
+}
+function cmp(a, b) {
+  const x = floorKey(a.name), y = floorKey(b.name);
+  return x[0] - y[0] || x[1] - y[1] || x[2].localeCompare(y[2], 'zh');
+}
+
+function pmQuality(v) {
+  if (v <= 35) return ['优', 'var(--ok)'];
+  if (v <= 75) return ['良', '#b99a00'];
+  if (v <= 115) return ['中', 'var(--warn)'];
+  return ['差', 'var(--bad)'];
+}
+function ago(sec) {
+  if (!sec) return '从未通信';
+  const d = Math.max(0, Date.now() / 1000 - sec);
+  return d < 90 ? Math.round(d) + ' 秒前' : d < 5400 ? Math.round(d / 60) + ' 分钟前' : Math.round(d / 3600) + ' 小时前';
+}
+
+const fill = r => r.style.setProperty('--p', (r.value / r.max * 100) + '%');
+
+function createCard(tid) {
+  const card = document.importNode($('#tpl').content, true).firstElementChild;
+  card.dataset.tid = tid;
+  const seg = $('.seg', card);
+  for (const [v, label] of MODES) {
+    const b = document.createElement('button');
+    b.textContent = label; b.dataset.mode = v;
+    b.onclick = () => send(card, {mode: v});
+    seg.append(b);
+  }
+  const filters = $('.filters', card);
+  for (const [k, label] of FILTERS) {
+    filters.insertAdjacentHTML('beforeend', `<div class="f" data-f="${k}"><span>${label}</span><div class="bar"><i></i></div><em></em></div>`);
+  }
+  $('.power', card).onclick = () => send(card, {sw: card._d.status.sw ? 0 : 1});
+  $('.name', card).onclick = () => rename(card);
+  card.querySelectorAll('input[type=range]').forEach(r => {
+    const out = r.nextElementSibling;
+    r.addEventListener('input', () => { card._drag = true; fill(r); out.textContent = r.value * 10 + ' m³/h'; });
+    r.addEventListener('change', () => { card._drag = false; send(card, {[r.dataset.k]: +r.value}); });
+  });
+  return card;
+}
+
+function update(card, d) {
+  card._d = d;
+  const s = d.status || {};
+  const online = !!d.online, on = online && !!s.sw, auto = s.mode === 1, busy = !!card._busy;
+  card.classList.toggle('offline', !online);
+  card.classList.toggle('running', on);
+  card.classList.toggle('busy', busy);
+  $('.name', card).textContent = d.name;
+  $('.state span', card).textContent = !online ? '离线' : on ? '运行中' : '已关机';
+  $('.power', card).disabled = !online || busy;
+
+  const alarms = Object.keys(ALARMS).filter(k => s[k]).map(k => ALARMS[k]);
+  const alert = $('.alert', card);
+  alert.hidden = !alarms.length;
+  alert.textContent = alarms.length ? alarms.join('、') + '需要更换' : '';
+
+  const set = (k, v) => $(`[data-m="${k}"]`, card).textContent = v;
+  set('pm', on ? s.PM25 : '--');
+  const q = on ? pmQuality(s.PM25) : null;
+  const pmq = $('[data-m="pmq"]', card);
+  pmq.textContent = q ? q[0] : ''; pmq.style.color = q ? q[1] : '';
+  set('temp', on ? (s.temp - 20) + '℃' : '--');
+  set('hum', on ? s.hum + '%' : '--');
+  set('co2', on && s.co2 > 0 ? s.co2 : '--');   // 0 ppm 不可能,说明这台没有 CO₂ 传感器
+
+  card.querySelectorAll('.seg button').forEach(b => {
+    b.classList.toggle('active', online && +b.dataset.mode === s.mode);
+    b.disabled = !on || busy;          // 关机时设备会忽略模式切换
+  });
+  card.querySelectorAll('input[type=range]').forEach(r => {
+    if (!card._drag && !busy) r.value = s[r.dataset.k] ?? 0;
+    fill(r);
+    r.nextElementSibling.textContent = (card._drag ? r.value : (s[r.dataset.k] ?? 0)) * 10 + ' m³/h';
+    r.disabled = !on || auto || busy;  // 自动模式下风速由设备自己决定
+  });
+  $('.hint', card).textContent = !online ? '' : !on ? '开机后才能切换模式、调节风速' : auto ? '自动模式下风速由设备控制,切到手动才能调节' : '';
+
+  for (const [k] of FILTERS) {
+    const v = s[k] ?? 0, row = $(`[data-f="${k}"]`, card);
+    const i = $('i', row);
+    i.style.width = v + '%';
+    i.className = v < 15 ? 'bad' : v < 30 ? 'warn' : '';
+    $('em', row).textContent = v + '%';
+  }
+  const rssi = d.info && d.info.rssi;
+  $('.foot', card).innerHTML = '';
+  for (const t of [d.devTid.slice(-4), d.ip, rssi != null ? '信号 ' + rssi + ' dBm' : '', '通信 ' + ago(d.lastSeen)].filter(Boolean)) {
+    const sp = document.createElement('span'); sp.textContent = t; $('.foot', card).append(sp);
+  }
+}
+
+async function send(card, body) {
+  const d = card._d;
+  card._busy = true; update(card, d);
+  try {
+    const r = await api(`/api/devices/${encodeURIComponent(d.devTid)}/command`, {method: 'POST', body: JSON.stringify(body)});
+    card._busy = false; update(card, r.device);
+  } catch (e) {
+    card._busy = false; update(card, card._d);
+    toast('操作失败:' + e.message, true);
+    load();
+  }
+}
+
+async function rename(card) {
+  const d = card._d;
+  const name = prompt('设备名称', d.name);
+  if (name == null || !name.trim() || name.trim() === d.name) return;
+  try { update(card, await api(`/api/devices/${encodeURIComponent(d.devTid)}/name`, {method: 'POST', body: JSON.stringify({name: name.trim()})})); }
+  catch (e) { toast('改名失败:' + e.message, true); }
+}
+
+function setSync(ok, text) {
+  const el = $('#sync'); el.className = ok ? '' : 'bad'; $('span', el).textContent = text;
+}
+
+async function load() {
+  try {
+    const list = (await api('/api/devices')).sort(cmp);
+    const main = $('#list');
+    if (!list.length) { main.innerHTML = '<div class="empty">还没有设备连接上来</div>'; cards.clear(); }
+    else $('.empty', main)?.remove();
+    for (const d of list) {
+      let card = cards.get(d.devTid);
+      if (!card) { card = createCard(d.devTid); cards.set(d.devTid, card); }
+      if (!card._busy) update(card, d);
+    }
+    list.forEach((d, i) => { const c = cards.get(d.devTid); if (main.children[i] !== c) main.insertBefore(c, main.children[i] || null); });
+    for (const [tid, c] of cards) if (!list.some(d => d.devTid === tid)) { c.remove(); cards.delete(tid); }
+    const online = list.filter(d => d.online).length;
+    setSync(true, `${online}/${list.length} 在线 · 更新于 ${new Date().toLocaleTimeString('zh-CN', {hour12: false})}`);
+  } catch (e) {
+    setSync(false, '无法连接服务器:' + e.message);
+  }
+}
+
+load();
+setInterval(() => { if (!document.hidden) load(); }, POLL_MS);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
+</script>
+</body>
+</html>

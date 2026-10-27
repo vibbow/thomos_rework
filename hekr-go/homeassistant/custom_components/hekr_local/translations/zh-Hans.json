@@ -1,0 +1,93 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "连接 hekr-local 服务器",
+        "description": "填写运行 hekr-local 的服务器地址。令牌是服务器环境变量 HEKR_TOKEN 的值,服务器未设置令牌则留空。",
+        "data": {
+          "host": "服务器地址",
+          "port": "端口",
+          "token": "访问令牌"
+        }
+      },
+      "reauth_confirm": {
+        "title": "重新输入访问令牌",
+        "description": "服务器拒绝了当前的访问令牌。",
+        "data": {
+          "token": "访问令牌"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "无法连接到服务器",
+      "invalid_auth": "访问令牌无效"
+    },
+    "abort": {
+      "already_configured": "这台服务器已经添加过了",
+      "reauth_successful": "重新认证成功"
+    }
+  },
+  "entity": {
+    "fan": {
+      "ventilation": {
+        "state_attributes": {
+          "preset_mode": {
+            "name": "模式",
+            "state": {
+              "manual": "手动",
+              "auto": "自动",
+              "boost": "强风"
+            }
+          }
+        }
+      }
+    },
+    "number": {
+      "supply_flow": {
+        "name": "新风风量"
+      },
+      "exhaust_flow": {
+        "name": "排风风量"
+      }
+    },
+    "sensor": {
+      "filter_primary": {
+        "name": "初效滤网寿命"
+      },
+      "filter_high": {
+        "name": "高效滤网寿命"
+      },
+      "filter_catalyst": {
+        "name": "冷触媒滤网寿命"
+      },
+      "filter_electrostatic": {
+        "name": "静电滤网寿命"
+      }
+    },
+    "binary_sensor": {
+      "alarm_primary": {
+        "name": "初效滤网需更换"
+      },
+      "alarm_high": {
+        "name": "高效滤网需更换"
+      },
+      "alarm_catalyst": {
+        "name": "冷触媒滤网需更换"
+      },
+      "alarm_electrostatic": {
+        "name": "静电滤网需更换"
+      },
+      "online": {
+        "name": "在线"
+      }
+    }
+  },
+  "exceptions": {
+    "device_off": {
+      "message": "设备已关机,请先开机"
+    },
+    "auto_mode": {
+      "message": "自动模式下风量由设备控制,请先切换到手动或强风"
+    }
+  }
+}

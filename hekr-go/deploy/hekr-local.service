@@ -1,0 +1,36 @@
+[Unit]
+Description=hekr-local (本地版 Hekr 云,托马仕新风)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/hekr-local
+EnvironmentFile=-/etc/hekr-local.env
+# 设备数据保存在 /var/lib/hekr-local/devices.json(目录由 systemd 自动创建并归 hekr 所有)
+Environment=HEKR_DATA=/var/lib/hekr-local/devices.json
+Restart=always
+RestartSec=3
+
+# 83、91 是特权端口;只授予绑定低端口的能力,不用 root
+# 需先创建用户: sudo useradd --system --no-create-home --shell /usr/sbin/nologin hekr
+User=hekr
+StateDirectory=hekr-local
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+# 加固
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+
+[Install]
+WantedBy=multi-user.target
