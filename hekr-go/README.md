@@ -82,19 +82,8 @@ python tools/provision.py --ssid Things --password 密码
 WiFi 图标闪烁)。成功后设备会连路由器并连到本服务器。
 `provision_softap.py` 是热点方式的备用实现,THD-4B 官方教程用的是一键配网,未必支持。
 
-## 排错:设备一直连不上(SYN 到了但没有应答)
+## 排错
 
-现象:在服务器上 `tcpdump` 能看到设备发来的 SYN 不断重传,日志里却没有任何连接。
-原因通常是**回包路由不对**。例如设备在 `172.17.2.0/24`,而服务器装了 Docker,
-默认网桥 `172.17.0.0/16` 把回包吞进了 `docker0`。检查:
-
-```sh
-ip route get <设备IP>      # 应该经网关走物理网卡,而不是 docker0
-```
-
-修复:加一条更精确的路由,并用 systemd drop-in 固化(`/etc/systemd/system/hekr-local.service.d/route.conf`):
-
-```ini
-[Service]
-ExecStartPre=-+/usr/sbin/ip route replace 172.17.2.0/24 via 192.168.188.1 dev ens34
-```
+设备连不上、`tcpdump` 能看到 SYN 却没有应答时,多半是回包路由不对:
+服务器上 Docker 的默认网桥(`172.17.0.0/16`)和设备网段重叠。
+`ip route get <设备IP>` 应经网关走物理网卡;若走了 `docker0`,在 `/etc/docker/daemon.json` 里改 `bip` 换个网段即可。
